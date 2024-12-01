@@ -1,7 +1,8 @@
 import { Webhook } from 'svix'
 import { headers } from 'next/headers'
 import { WebhookEvent } from '@clerk/nextjs/server'
-import { createUser } from  '@/actions/user.actons'
+import { createUser,updateUser,deleteUser } from  '@/actions/user.actons'
+import { NextResponse } from 'next/server'
 
 
 export async function POST(req: Request) {
@@ -71,6 +72,31 @@ export async function POST(req: Request) {
     }
 
     await createUser(user as CreateUserParams)
+  }
+
+  // UPDATE
+  if (eventType === "user.updated") {
+    const { id, image_url, first_name, last_name, username } = evt.data;
+
+    const user = {
+      firstName: first_name || "" ,
+      lastName: last_name || "",
+      username: username! ,
+      photo: image_url,
+    };
+
+    const updatedUser = await updateUser(id, user);
+
+    return NextResponse.json({ message: "OK", user: updatedUser });
+  }
+
+  // DELETE
+  if (eventType === "user.deleted") {
+    const { id } = evt.data;
+
+    const deletedUser = await deleteUser(id!);
+
+    return NextResponse.json({ message: "OK", user: deletedUser });
   }
 
   return new Response('successfully implement', { status: 200 })
