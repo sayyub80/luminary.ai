@@ -4,7 +4,7 @@ import React from 'react'
 async function Home() {
   const user = await currentUser();
   console.log("hello");
-  console.log(user?.firstName);
+  console.log(user);
   return (
    
     <div>
