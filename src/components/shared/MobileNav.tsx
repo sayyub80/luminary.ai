@@ -9,7 +9,7 @@ import { UserButton, SignedIn,SignedOut  } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
-import { navLinks } from "@/constants";
+import { navLinks } from "@/constants/index";
 import { usePathname } from "next/navigation";
 
 
