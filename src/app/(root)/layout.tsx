@@ -1,5 +1,6 @@
 import Sidebar from "@/components/shared/Sidebar";
 import MobileNav  from "@/components/shared/MobileNav";
+import { Toaster } from "@/components/ui/toaster"
 export default function Layout({
   children,
 }: {
@@ -19,6 +20,7 @@ export default function Layout({
           </div>
         </div>
       </div>
+      <Toaster />
       </main>
        
   

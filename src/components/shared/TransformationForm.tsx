@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input"
 import { defaultValues, transformationTypes } from "@/constants"
 import { CustomField } from "./CustomField"
 import {  useState } from "react"
+import MediaUploader from "./MediaUploader"
 
 export const formSchema = z.object({
     title: z.string(),
@@ -139,7 +140,7 @@ function TransformationForm({action,data=null,userId,type,creditBalance,config=n
 
 
 
-{(type === 'remove' || type === 'recolor') && (
+      {(type === 'remove' || type === 'recolor') && (
           <div className="prompt-field">
             <CustomField 
               control={form.control}
@@ -185,6 +186,24 @@ function TransformationForm({action,data=null,userId,type,creditBalance,config=n
           </div>
         )}
 
+      <div className="media-uploader-field">
+           <CustomField
+           control={form.control}
+           name="publicId"
+           className="flex size-full flex-col"
+           render={({ field }) => (
+            <MediaUploader 
+              onValueChange={field.onChange}
+              setImage={setImage}
+              image={image}
+              publicId={field.value}
+              type={type}
+            />
+          )}
+           />
+      </div>
+     
+     {/* submit button */}
      <div className="flex flex-col gap-4">
      <Button 
      type="button"
@@ -203,6 +222,7 @@ function TransformationForm({action,data=null,userId,type,creditBalance,config=n
 
         
      </div>
+
       </form>
     </Form>
   )
