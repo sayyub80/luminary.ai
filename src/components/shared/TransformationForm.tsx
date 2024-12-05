@@ -5,8 +5,12 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { Button } from "@/components/ui/button"
 import {aspectRatioOptions} from "@/constants" 
-import {AspectRatioKey} from "@/lib/utils"
+import {AspectRatioKey, deepMergeObjects} from "@/lib/utils"
 import { debounce } from "@/lib/utils"
+import TransformedImage from "@/components/shared/TransformedImage"
+import { useEffect, useState, useTransition } from "react"
+
+
 import {
   Form,
   FormControl,
@@ -27,9 +31,11 @@ import {
 import { Input } from "@/components/ui/input"
 import { defaultValues, transformationTypes } from "@/constants"
 import { CustomField } from "./CustomField"
-import {  useState } from "react"
 import MediaUploader from "./MediaUploader"
-
+import { updateCredits } from "@/lib/actions/user.actions"
+import { getCldImageUrl } from "next-cloudinary"
+import { useRouter } from "next/navigation"
+import { addImage,updateImage,deleteImage,getImageById } from "@/actions/image.actions"
 export const formSchema = z.object({
     title: z.string(),
     aspectRatio: z.string().optional(),
@@ -42,12 +48,15 @@ export const formSchema = z.object({
 
 function TransformationForm({action,data=null,userId,type,creditBalance,config=null
 }:TransformationFormProps) {
+    const router=useRouter();
     const transformationType =  transformationTypes[type]
     const [image,setImage]=useState(data)
     const [newTransformation,setNewTransformation]=useState<Transformations | null>(null)
     const [isSubmitting,setIsSubmitting] = useState(false)
     const [isTransforming,setIsTransforming]=useState(false)
     const [transformationConfig,setTransformationConfig]=useState(config)
+    const [isPending, startTransition] = useTransition()
+
 
     const initialValues = data && action === 'Update' ? {
         title: data?.title,
@@ -64,7 +73,70 @@ function TransformationForm({action,data=null,userId,type,creditBalance,config=n
     })
 
     //onSubmit
-    const onSubmit = async (data: z.infer<typeof formSchema>) => {  
+    async function onSubmit(values: z.infer<typeof formSchema>) {
+      setIsSubmitting(true);
+  
+      if(data || image) {
+        const transformationUrl = getCldImageUrl({
+          width: image?.width,
+          height: image?.height,
+          src: image?.publicId,
+          ...transformationConfig
+        })
+  
+        const imageData = {
+          title: values.title,
+          publicId: image?.publicId,
+          transformationType: type,
+          width: image?.width,
+          height: image?.height,
+          config: transformationConfig,
+          secureURL: image?.secureURL,
+          transformationURL: transformationUrl,
+          aspectRatio: values.aspectRatio,
+          prompt: values.prompt,
+          color: values.color,
+        }
+  
+        if(action === 'Add') {
+          try {
+            const newImage = await addImage({
+              image: imageData,
+              userId,
+              path: '/'
+            })
+  
+            if(newImage) {
+              form.reset()
+              setImage(data)
+              router.push(`/transformations/${newImage._id}`)
+            }
+          } catch (error) {
+            console.log(error);
+          }
+        }
+  
+        if(action === 'Update') {
+          try {
+            const updatedImage = await updateImage({
+              image: {
+                ...imageData,
+                _id: data._id
+              },
+              userId,
+              path: `/transformations/${data._id}`
+            })
+  
+            if(updatedImage) {
+              router.push(`/transformations/${updatedImage._id}`)
+            }
+          } catch (error) {
+            console.log(error);
+          }
+        }
+      }
+  
+      setIsSubmitting(false)
     }
     //select 
    const onSelectFieldHandler = (value: string, onChangeField: (value: string) => void) => {
@@ -96,8 +168,16 @@ function TransformationForm({action,data=null,userId,type,creditBalance,config=n
       return onChangeField(value)
     }
     //onTransformHandler
-    const onTransformHandler =  () => {
+    const onTransformHandler = async () => {
+        setIsTransforming(true)
+        setTransformationConfig(
+          deepMergeObjects(newTransformation,transformationConfig)
+        )
+        setNewTransformation(null)
 
+        startTransition(async ()=>{
+          await updateCredits(userId,-1);
+        })
     }
 
   return (
@@ -201,27 +281,36 @@ function TransformationForm({action,data=null,userId,type,creditBalance,config=n
             />
           )}
            />
+
+
+        <TransformedImage 
+            image={image}
+            type={type}
+            title={form.getValues().title}
+            isTransforming={isTransforming}
+            setIsTransforming={setIsTransforming}
+            transformationConfig={transformationConfig}
+          />
       </div>
      
      {/* submit button */}
      <div className="flex flex-col gap-4">
-     <Button 
-     type="button"
-     className="submit-button capitalize"
-     disabled={isSubmitting || newTransformation===null}
-     onClick={onTransformHandler}
-     >
-        { isTransforming ?'Transforming...':'Apply Transformation'}
-    </Button>
-     <Button 
-     type="submit"
-     className="submit-button capitalize"
-     disabled={isSubmitting}
-     >
-        {isSubmitting?'Submitting...':'Save Image'}</Button>
-
-        
-     </div>
+          <Button 
+            type="button"
+            className="submit-button capitalize"
+            disabled={isTransforming || newTransformation === null}
+            onClick={onTransformHandler}
+          >
+            {isTransforming ? 'Transforming...' : 'Apply Transformation'}
+          </Button>
+          <Button 
+            type="submit"
+            className="submit-button capitalize"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Submitting...' : 'Save Image'}
+          </Button>
+        </div>
 
       </form>
     </Form>
