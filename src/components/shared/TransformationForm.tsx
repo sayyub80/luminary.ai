@@ -4,7 +4,7 @@ import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { Button } from "@/components/ui/button"
-import {aspectRatioOptions} from "@/constants" 
+import {aspectRatioOptions, creditFee} from "@/constants" 
 import {AspectRatioKey, deepMergeObjects} from "@/lib/utils"
 import { debounce } from "@/lib/utils"
 import TransformedImage from "@/components/shared/TransformedImage"
@@ -36,6 +36,7 @@ import { updateCredits } from "@/lib/actions/user.actions"
 import { getCldImageUrl } from "next-cloudinary"
 import { useRouter } from "next/navigation"
 import { addImage,updateImage,deleteImage,getImageById } from "@/actions/image.actions"
+import { InsufficientCreditsModal } from "./InsufficientCreditModal"
 export const formSchema = z.object({
     title: z.string(),
     aspectRatio: z.string().optional(),
@@ -176,13 +177,20 @@ function TransformationForm({action,data=null,userId,type,creditBalance,config=n
         setNewTransformation(null)
 
         startTransition(async ()=>{
-          await updateCredits(userId,-1);
+          await updateCredits(userId,creditFee);
         })
     }
+
+    useEffect(()=>{
+      if(image && (type === 'restore' || type==='removeBackground')){
+        setNewTransformation(transformationType.config)
+      }
+    },[image,transformationType.config,type])
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+         {creditBalance<Math.abs(creditFee) && <InsufficientCreditsModal/>}
          <CustomField
          control={form.control}
          name="title"
