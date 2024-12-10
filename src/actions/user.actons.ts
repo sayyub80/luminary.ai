@@ -101,7 +101,7 @@ export async function deleteUser(clerkId: string) {
 
 //use credit and update
 
-async function updateCredits(userId:string,creditFee:number) {
+export async function updateCredits(userId:string,creditFee:number) {
       try {
          await connectToDB();
           const updatedUserCredits = await User.findOneAndUpdate(
@@ -117,3 +117,5 @@ async function updateCredits(userId:string,creditFee:number) {
         console.log(error)
       }
 }
+
+

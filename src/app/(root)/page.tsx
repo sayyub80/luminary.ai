@@ -3,6 +3,7 @@ import { navLinks } from "@/constants"
 import { getAllImages } from "@/actions/image.actions"
 import Image from "next/image"
 import Link from "next/link"
+import { SignedIn, SignedOut } from "@clerk/nextjs"
 
 const Home = async ({ searchParams }: SearchParamProps) => {
   const page = Number(searchParams?.page) || 1;
@@ -32,7 +33,7 @@ const Home = async ({ searchParams }: SearchParamProps) => {
         </ul>
       </section>
 
-      <section className="sm:mt-12">
+     <section className="sm:mt-12">
         <Collection 
           hasSearch={true}
           images={images?.data}
@@ -40,6 +41,9 @@ const Home = async ({ searchParams }: SearchParamProps) => {
           page={page}
         />
       </section>
+     
+    
+      
     </>
   )
 }
